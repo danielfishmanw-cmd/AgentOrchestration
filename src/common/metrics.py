@@ -19,6 +19,9 @@ class MetricsCollector:
             self._counters[metric] += value
 
     def gauge(self, metric: str, value: float) -> None:
+        import math
+        if not math.isfinite(value):
+            raise ValueError("Gauge value must be finite")
         with self._lock:
             self._gauges[metric] = value
 
