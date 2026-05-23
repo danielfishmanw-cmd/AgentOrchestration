@@ -10,7 +10,13 @@ from urllib.error import HTTPError
 class OrchestratorClient:
     def __init__(self, base_url: str = None, api_key: str = None):
         self.base_url = base_url or os.getenv("AO_API_URL", "https://api.agent-orchestrator.io")
-        self.api_key = api_key or os.getenv("AO_API_KEY", "")
+        resolved_key = api_key or os.getenv("AO_API_KEY", "")
+        if not resolved_key or not isinstance(resolved_key, str) or not resolved_key.strip():
+            raise ValueError(
+                "API key is missing, empty, or whitespace-only. "
+                "Please provide a valid `api_key` parameter or set the `AO_API_KEY` environment variable."
+            )
+        self.api_key = resolved_key
         self._session = None
 
     def _request(self, method: str, path: str, data: Dict = None) -> Dict:
