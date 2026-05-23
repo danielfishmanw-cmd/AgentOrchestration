@@ -73,6 +73,15 @@ class AgentRegistry:
     def count(self) -> int:
         return len(self._agents)
 
+    def record_heartbeat(self, agent_id: str) -> bool:
+        if agent_id not in self._agents:
+            return False
+        agent = self._agents[agent_id]
+        if agent["status"] in [AgentStatus.STOPPED.value, AgentStatus.FAILED.value, AgentStatus.TERMINATED.value]:
+            raise ValueError(f"Cannot record heartbeat for agent '{agent_id}' in terminal status '{agent['status']}'.")
+        agent["updated_at"] = time.time()
+        return True
+
 # 2019-01-29T11:24:49 update
 
 # 2019-04-09T13:38:38 update
