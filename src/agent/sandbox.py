@@ -9,6 +9,11 @@ from pathlib import Path
 
 class ResourceLimits:
     def __init__(self, cpu_time: int = 60, memory_mb: int = 512, disk_mb: int = 100):
+        for name, val in [("cpu_time", cpu_time), ("memory_mb", memory_mb), ("disk_mb", disk_mb)]:
+            if isinstance(val, bool) or not isinstance(val, (int, float)):
+                raise TypeError(f"{name} must be numeric, got {type(val).__name__}")
+            if val <= 0:
+                raise ValueError(f"{name} must be positive, got {val}")
         self.cpu_time = cpu_time
         self.memory_mb = memory_mb
         self.disk_mb = disk_mb
@@ -41,6 +46,8 @@ class AgentSandbox:
             resource.setrlimit(resource.RLIMIT_CPU, (limits.cpu_time, limits.cpu_time))
             mem_bytes = limits.memory_mb * 1024 * 1024
             resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
+            disk_bytes = limits.disk_mb * 1024 * 1024
+            resource.setrlimit(resource.RLIMIT_FSIZE, (disk_bytes, disk_bytes))
         except (ValueError, resource.error) as e:
             pass
 
