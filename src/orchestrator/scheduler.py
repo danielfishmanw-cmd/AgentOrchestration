@@ -51,16 +51,18 @@ class TaskScheduler:
     def schedule(self, task: Dict, delay: float, queue: str = "default", priority: int = 0) -> str:
         task_id = str(uuid4())
         task["id"] = task_id
-        self._scheduled[task_id] = time.time() + delay
+        task["priority"] = priority
+        self._scheduled[task_id] = (time.monotonic() + delay, task)
         return task_id
 
     async def dequeue(self, queue: str = "default", timeout: float = 1.0) -> Optional[Dict]:
-        now = time.time()
-        expired = [tid for tid, t in self._scheduled.items() if t <= now]
+        now = time.monotonic()
+        expired = [tid for tid, (t, _) in self._scheduled.items() if t <= now]
         for tid in expired:
-            task = self._scheduled.pop(tid)
-            if task:
-                self.enqueue(task, queue)
+            val = self._scheduled.pop(tid, None)
+            if val:
+                _, task = val
+                self.enqueue(task, queue, priority=task.get("priority", 0))
 
         if queue in self._queues and len(self._queues[queue]) > 0:
             task = self._queues[queue].pop()
