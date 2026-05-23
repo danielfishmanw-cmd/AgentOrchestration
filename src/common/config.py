@@ -13,8 +13,12 @@ class Config:
         self._load_env_overrides()
 
     def load(self, path: str) -> None:
+        import copy
         with open(path) as f:
-            self._data = json.load(f)
+            data = json.load(f)
+            if not isinstance(data, dict):
+                raise TypeError("Config root must be a JSON object (dictionary)")
+            self._data = copy.deepcopy(data)
 
     def _load_env_overrides(self) -> None:
         prefix = "AO_"
@@ -45,10 +49,23 @@ class Config:
         return current
 
     def set(self, key: str, value: Any) -> None:
-        self._set_nested(key, value)
+        import copy
+        self._set_nested(key, copy.deepcopy(value))
 
     def to_dict(self) -> Dict:
-        return self._data
+        import copy
+        return copy.deepcopy(self._data)
+
+    def to_redacted_dict(self) -> Dict:
+        import copy
+        def redact(val):
+            if isinstance(val, dict):
+                return {k: ("******" if any(s in k.lower() for s in ["key", "secret", "password", "token"]) else redact(v))
+                        for k, v in val.items()}
+            elif isinstance(val, list):
+                return [redact(item) for item in val]
+            return val
+        return redact(copy.deepcopy(self._data))
 
 # 2019-03-14T15:29:32 update
 
